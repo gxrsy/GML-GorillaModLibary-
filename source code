@@ -1,0 +1,202 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog
+import os, urllib.request, zipfile, io, webbrowser, ssl, json, shutil
+
+MOD_DATA = {
+    "BepInEx": {"category": "Core", "repo": "BepInEx/BepInEx", "filter": "win_x64", "author": "BepInEx Team", "desc": "The foundation for all mods."},
+    "Utilla": {"category": "Core", "repo": "legoandmars/Utilla", "author": "Legoandmars", "desc": "Required for maps and private rooms."},
+    "BepInject": {"category": "Libs", "repo": "Auros/Bepinject", "author": "Auros", "desc": "Dependency injection support."},
+    "Extenject": {"category": "Libs", "repo": "gxrsy/uyunjyu", "author": "Mathijs-Bakker", "desc": "The engine BepInject runs on."},
+    "Newtonsoft.Json": {"category": "Libs", "repo": "legoandmars/Newtonsoft.Json", "author": "JamesNK", "desc": "Required for mod data storage."},
+    "TMP Loader": {"category": "Libs", "repo": "AHauntedArmy/TMPLoader", "author": "AHauntedArmy", "desc": "Fixes text rendering in menus."},
+    "Pokruks Camera Mod": {"category": "Legal", "repo": "gxrsy/Pokrok-camera-REUPLOAD0", "author": "Pokruk", "desc": "Good camera mod for content creation."},
+    "Forever Cosmetx": {"category": "Illegal", "repo": "iiDk-the-actual/ForeverCosmetx", "author": "IIDK", "desc": "Unlocks all cosmetics for use in-game."},
+    "Gorilla Shirts": {"category": "Legal", "repo": "gxrsy/gorilla-shirts-by-idk-who-icl", "author": "idk", "desc": "Custom cosmetics/playermodels."},
+    "Several Bees": {"category": "Libs", "repo": "sevvy-wevvy/Several-Bees", "author": "sevvy-wevvy", "desc": "A library for easy UI creation and in-game mod browsing."}
+}
+
+PRESETS = {
+    "Content Creator": {
+        "mods": ["BepInEx", "Utilla", "BepInject", "Extenject", "Newtonsoft.Json", "TMP Loader", "Pokruks Camera Mod"],
+        "desc": "Selects everything needed for a standard content creation setup.",
+        "author": "GML Team"
+    }
+}
+
+# sidebar labels
+TAB_NAMES = ["Core", "Libs", "Legal", "Illegal", "Presets", "Credits"]
+
+# colors (navy/dark vibe)
+NIGHT_BG = "#1e1e1e"; SIDE_BAR = "#252526"; BLUE_HL = "#007acc"; GRAY_T = "#cccccc"
+GO_BTN = "#2e7d32"; STOP_BTN = "#a83232"
+
+class GML_App:
+    def __init__(self, win):
+        self.win = win
+        self.win.title("GML - Gorilla Mod Libary")
+        self.win.geometry("950x580")
+        self.win.configure(bg=NIGHT_BG)
+
+        # store the checkbutton states
+        self.checks = {name: tk.BooleanVar(value=False) for name in my_mod_list}
+        self.pre_checks = {name: tk.BooleanVar(value=False) for name in my_presets}
+        self.active_tab = tk.StringVar(value="Core")
+        
+        # default steam path usually
+        self.game_dir = tk.StringVar(value=r"C:\Program Files (x86)\Steam\steamapps\common\Gorilla Tag")
+
+        # UI frames
+        self.left_side = tk.Frame(win, bg=SIDE_BAR, width=160)
+        self.left_side.pack(side="left", fill="y")
+        self.left_side.pack_propagate(False)
+
+        self.bottom_bar = tk.Frame(win, bg=SIDE_BAR, height=65)
+        self.bottom_bar.pack(side="bottom", fill="x")
+
+        self.main_view = tk.Frame(win, bg=NIGHT_BG)
+        self.main_view.pack(side="right", fill="both", expand=True)
+
+        # Title
+        tk.Label(self.left_side, text="GML", bg=SIDE_BAR, fg=BLUE_HL, font=("Segoe UI", 20, "bold")).pack(pady=20)
+        
+        # Build sidebar buttons
+        self.nav_btns = {}
+        for t in TAB_NAMES:
+            b = tk.Button(self.left_side, text=t, bg=SIDE_BAR, fg=GRAY_T, relief="flat", anchor="w", padx=20, 
+                          font=("Segoe UI", 10), command=lambda x=t: self.switch_view(x))
+            b.pack(fill="x", pady=2)
+            self.nav_btns[t] = b
+
+        # Folder picker at top
+        top_row = tk.Frame(self.main_view, bg=NIGHT_BG, padx=10, pady=10)
+        top_row.pack(fill="x")
+        tk.Entry(top_row, textvariable=self.game_dir, bg="#3c3c3c", fg="white", relief="flat", font=("Segoe UI", 9)).pack(side="left", fill="x", expand=True, padx=(0, 10), ipady=5)
+        tk.Button(top_row, text="Find Folder", bg="#444", fg="white", relief="flat", padx=15, 
+                  command=lambda: self.game_dir.set(filedialog.askdirectory())).pack(side="right")
+
+        # The mod selector and info split
+        split_box = tk.Frame(self.main_view, bg=NIGHT_BG)
+        split_box.pack(fill="both", expand=True)
+
+        self.list_area = tk.Frame(split_box, bg="#2d2d2d", padx=0, pady=10)
+        self.list_area.pack(side="left", fill="both", expand=True)
+
+        self.info_box = tk.Frame(split_box, bg="#252526", width=300, padx=20, pady=15)
+        self.info_box.pack(side="right", fill="both")
+        self.info_box.pack_propagate(False)
+
+        self.dev_label = tk.Label(self.info_box, text="Author: ---", bg="#252526", fg=BLUE_HL, font=("Segoe UI", 9, "bold"))
+        self.dev_label.pack(anchor="w")
+        self.info_text = tk.Label(self.info_box, text="Pick a mod to see info.", bg="#252526", fg=GRAY_T, wraplength=250, justify="left", font=("Segoe UI", 10))
+        self.info_text.pack(pady=20, anchor="nw")
+
+        # Footer stuff
+        self.log_var = tk.StringVar(value="Ready.")
+        tk.Label(self.bottom_bar, textvariable=self.log_var, bg=SIDE_BAR, fg=GRAY_T).pack(side="left", padx=20)
+        
+        self.run_btn = tk.Button(self.bottom_bar, text="INSTALL SELECTED", bg=GO_BTN, fg="white", relief="flat", font=("Segoe UI", 10, "bold"), padx=20, command=self.do_install)
+        self.run_btn.pack(side="right", padx=15, pady=12)
+
+        tk.Button(self.bottom_bar, text="OPEN GAME", bg=BLUE_HL, fg="white", relief="flat", font=("Segoe UI", 10, "bold"), padx=20, command=lambda: webbrowser.open("steam://rungameid/1533390")).pack(side="right", padx=5, pady=12)
+
+        tk.Button(self.bottom_bar, text="WIPE MODS", bg=STOP_BTN, fg="white", relief="flat", font=("Segoe UI", 9, "bold"), padx=15, command=self.wipe_all).pack(side="right", padx=5, pady=12)
+
+        self.switch_view("Core")
+
+    def switch_view(self, t):
+        if t == "Illegal":
+            if not messagebox.askyesno("Wait!", "These mods get you banned in pubs. You sure?"):
+                self.switch_view("Core"); return
+
+        self.active_tab.set(t)
+        for n, b in self.nav_btns.items():
+            b.config(bg=SIDE_BAR if n != t else "#3e3e3e", fg=GRAY_T if n != t else "white")
+        
+        for w in self.list_area.winfo_children(): w.destroy()
+        
+        if t == "Presets":
+            for p in my_presets:
+                tk.Checkbutton(self.list_area, text=p, variable=self.pre_checks[p], bg="#2d2d2d", fg="white", selectcolor="#444", font=("Segoe UI", 10, "bold"), padx=20, command=lambda x=p: self.run_preset(x)).pack(anchor="w", pady=8)
+        elif t == "Credits":
+            txt = "GML - Gorilla Mod Library\n\nLead: Gxrsy\n\nBig thanks to the BepInEx guys, legoandmars, and Auros for the tools.\n\nKeep on monking!"
+            tk.Label(self.list_area, text=txt, bg="#2d2d2d", fg="white", font=("Segoe UI", 10), justify="left", padx=20, pady=20).pack(anchor="nw")
+            self.dev_label.config(text="By: Gxrsy")
+        else:
+            matches = [k for k, v in my_mod_list.items() if v["cat"] == t]
+            for m in matches:
+                tk.Checkbutton(self.list_area, text=m, variable=self.checks[m], bg="#2d2d2d", fg="white", selectcolor="#444", font=("Segoe UI", 10), padx=20, command=lambda x=m: self.show_info(x)).pack(anchor="w", pady=5)
+
+    def run_preset(self, p):
+        on = self.pre_checks[p].get()
+        for m in my_presets[p]["items"]:
+            if m in self.checks: self.checks[m].set(on)
+        self.show_info(p, is_p=True)
+
+    def show_info(self, n, is_p=False):
+        data = my_presets[n] if is_p else my_mod_list[n]
+        self.dev_label.config(text=f"Author: {data.get('dev', data.get('by'))}")
+        self.info_text.config(text=data.get('info', data.get('about')))
+
+    def wipe_all(self):
+        p = self.game_dir.get()
+        target = os.path.join(p, "BepInEx")
+        if not os.path.exists(target):
+            messagebox.showinfo("?", "Nothing to delete here.")
+            return
+        if messagebox.askyesno("Confirm", "Kill all mods?"):
+            try:
+                shutil.rmtree(target)
+                for f in ["doorstop_config.ini", "winhttp.dll"]:
+                    if os.path.exists(os.path.join(p, f)): os.remove(os.path.join(p, f))
+                self.log_var.set("Cleaned.")
+            except Exception as e: messagebox.showerror("Error", str(e))
+
+    def do_install(self):
+        root = self.game_dir.get()
+        if not os.path.exists(os.path.join(root, "Gorilla Tag.exe")):
+            messagebox.showerror("Oops", "Select the right GT folder first.")
+            return
+        
+        self.run_btn.config(state="disabled", text="HUNTING...")
+        errors = []; ctx = ssl._create_unverified_context()
+
+        for name, var in self.checks.items():
+            if var.get():
+                self.log_var.set(f"Working on {name}...")
+                self.win.update()
+                try:
+                    # check github api
+                    link = f"https://api.github.com/repos/{my_mod_list[name]['github']}/releases"
+                    r = urllib.request.Request(link, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(r, context=ctx) as resp:
+                        js = json.loads(resp.read().decode())
+                        files = js[0]['assets']
+                        # find zip or dll
+                        match = next((a for a in files if (a['name'].lower().endswith('.zip') or a['name'].lower().endswith('.dll')) 
+                                       and (not my_mod_list[name].get('find') or my_mod_list[name]['find'] in a['name'].lower())), None)
+                        
+                        if match:
+                            dl = match['browser_download_url']
+                            fname = match['name']
+                            with urllib.request.urlopen(urllib.request.Request(dl, headers={'User-Agent': 'Mozilla/5.0'}), context=ctx) as stream:
+                                raw = stream.read()
+                                if fname.lower().endswith('.zip'):
+                                    with zipfile.ZipFile(io.BytesIO(raw)) as z: z.extractall(root)
+                                else:
+                                    # move dll to plugins
+                                    plug_dir = os.path.join(root, "BepInEx", "plugins")
+                                    os.makedirs(plug_dir, exist_ok=True)
+                                    with open(os.path.join(plug_dir, fname), "wb") as f: f.write(raw)
+                        else: errors.append(name)
+                except Exception as err: errors.append(f"{name} ({err})")
+        
+        self.run_btn.config(state="normal", text="INSTALL SELECTED")
+        self.log_var.set("Done.")
+        if errors: messagebox.showwarning("Issues", f"Failed: {', '.join(errors)}")
+        else: messagebox.showinfo("Nice", "Mods updated successfully.")
+
+if __name__ == "__main__":
+    try:
+        base = tk.Tk(); app = GML_App(base); base.mainloop()
+    except Exception as e:
+        import tkinter.messagebox as m; d = tk.Tk(); d.withdraw(); m.showerror("Crash", str(e))
