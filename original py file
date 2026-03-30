@@ -15,7 +15,7 @@ mods = {
     "Several Bees": {"cat": "Libs", "repo": "sevvy-wevvy/Several-Bees", "dev": "sevvy-wevvy", "info": "A library for easy UI creation and in-game mod browsing."}
 }
 
-Presets = {
+presets = {
     "Content Creator": {
         "items": ["BepInEx", "Utilla", "BepInject", "Extenject", "Newtonsoft.Json", "TMP Loader", "Pokruks Camera Mod"],
         "info": "Selects everything needed for a standard content creation setup.",
@@ -35,7 +35,7 @@ class App:
         self.win.configure(bg=COL_BG)
 
         self.checks = {n: tk.BooleanVar(value=False) for n in mods}
-        self.pre_checks = {n: tk.BooleanVar(value=False) for n in packs}
+        self.pre_checks = {n: tk.BooleanVar(value=False) for n in presets}
         self.cur_tab = tk.StringVar(value="Core")
         self.dir = tk.StringVar(value=r"C:\Program Files (x86)\Steam\steamapps\common\Gorilla Tag")
 
@@ -101,10 +101,10 @@ class App:
         for w in self.list.winfo_children(): w.destroy()
         
         if t == "Presets":
-            for p in packs:
+            for p in presets:
                 tk.Checkbutton(self.list, text=p, variable=self.pre_checks[p], bg="#2d2d2d", fg="white", selectcolor="#444", font=("Segoe UI", 10, "bold"), padx=20, command=lambda x=p: self.do_preset(x)).pack(anchor="w", pady=8)
         elif t == "Credits":
-            msg = "Manager v8.8\n\nDev: Gxrsy\n\nThanks to BepInEx, Utilla, and Auros."
+            msg = "Manager v8.8\n\nDev: Gxrsy\n\nThanks to BepInEx, Utilla, IIDK, sevvy-wevvy and Auros."
             tk.Label(self.list, text=msg, bg="#2d2d2d", fg="white", font=("Segoe UI", 10), justify="left", padx=20, pady=20).pack(anchor="nw")
         else:
             items = [k for k, v in mods.items() if v["cat"] == t]
@@ -113,12 +113,12 @@ class App:
 
     def do_preset(self, p):
         val = self.pre_checks[p].get()
-        for m in packs[p]["items"]:
+        for m in presets[p]["items"]:
             if m in self.checks: self.checks[m].set(val)
         self.get_info(p, True)
 
     def get_info(self, n, is_p=False):
-        d = packs[n] if is_p else mods[n]
+        d = presets[n] if is_p else mods[n]
         self.auth_lab.config(text=f"By: {d.get('dev')}")
         self.desc_lab.config(text=d.get('info'))
 
