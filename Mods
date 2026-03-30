@@ -1,0 +1,10 @@
+    "BepInEx": {"category": "Core", "repo": "BepInEx/BepInEx", "filter": "win_x64", "author": "BepInEx Team", "desc": "The foundation for all mods."},
+    "Utilla": {"category": "Core", "repo": "legoandmars/Utilla", "author": "Legoandmars", "desc": "Required for maps and private rooms."},
+    "BepInject": {"category": "Libs", "repo": "Auros/Bepinject", "author": "Auros", "desc": "Dependency injection support."},
+    "Extenject": {"category": "Libs", "repo": "gxrsy/uyunjyu", "author": "Mathijs-Bakker", "desc": "The engine BepInject runs on."},
+    "Newtonsoft.Json": {"category": "Libs", "repo": "legoandmars/Newtonsoft.Json", "author": "JamesNK", "desc": "Required for mod data storage."},
+    "TMP Loader": {"category": "Libs", "repo": "AHauntedArmy/TMPLoader", "author": "AHauntedArmy", "desc": "Fixes text rendering in menus."},
+    "Pokruks Camera Mod": {"category": "Legal", "repo": "gxrsy/Pokrok-camera-REUPLOAD0", "author": "Pokruk", "desc": "Good camera mod for content creation."},
+    "Forever Cosmetx": {"category": "Illegal", "repo": "iiDk-the-actual/ForeverCosmetx", "author": "IIDK", "desc": "Unlocks all cosmetics for use in-game."},
+    "Gorilla Shirts": {"category": "Legal", "repo": "gxrsy/gorilla-shirts-by-idk-who-icl", "author": "idk", "desc": "Custom cosmetics/playermodels."},
+    "Several Bees": {"category": "Libs", "repo": "sevvy-wevvy/Several-Bees", "author": "sevvy-wevvy", "desc": "A library for easy UI creation and in-game mod browsing."}
