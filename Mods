@@ -8,3 +8,11 @@
     "Forever Cosmetx": {"category": "Illegal", "repo": "iiDk-the-actual/ForeverCosmetx", "author": "IIDK", "desc": "Unlocks all cosmetics for use in-game."},
     "Gorilla Shirts": {"category": "Legal", "repo": "gxrsy/gorilla-shirts-by-idk-who-icl", "author": "idk", "desc": "Custom cosmetics/playermodels."},
     "Several Bees": {"category": "Libs", "repo": "sevvy-wevvy/Several-Bees", "author": "sevvy-wevvy", "desc": "A library for easy UI creation and in-game mod browsing."}
+
+
+    PRESETS:
+    "Content Creator": {
+        "items": ["BepInEx", "Utilla", "BepInject", "Extenject", "Newtonsoft.Json", "TMP Loader", "Pokruks Camera Mod"],
+        "info": "Selects everything needed for a standard content creation setup.",
+        "dev": "GML Team"
+    }
