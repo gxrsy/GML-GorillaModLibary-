@@ -15,7 +15,7 @@ mods = {
     "Several Bees": {"cat": "Libs", "repo": "sevvy-wevvy/Several-Bees", "dev": "sevvy-wevvy", "info": "A library for easy UI creation and in-game mod browsing."}
 }
 
-packs = {
+Presets = {
     "Content Creator": {
         "items": ["BepInEx", "Utilla", "BepInject", "Extenject", "Newtonsoft.Json", "TMP Loader", "Pokruks Camera Mod"],
         "info": "Selects everything needed for a standard content creation setup.",
